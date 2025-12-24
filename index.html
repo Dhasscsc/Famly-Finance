@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>வரவு செலவு மேலாண்மை</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --family-color: #27ae60;
+            --business-color: #e74c3c;
+            --stock-color: #f39c12;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .sidebar {
+            background-color: var(--primary-color);
+            color: white;
+            min-height: calc(100vh - 56px);
+            padding: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .table th {
+            background-color: #f1f1f1;
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            border-left: 5px solid;
+            transition: transform 0.3s;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .family-card {
+            border-left-color: var(--family-color);
+        }
+        
+        .business-card {
+            border-left-color: var(--business-color);
+        }
+        
+        .stock-card {
+            border-left-color: var(--stock-color);
+        }
+        
+        .income {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .expense {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- நாவிகேஷன் பார் -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-color);">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-money-check-alt"></i> வரவு செலவு மேலாண்மை
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3" id="current-date"></span>
+                <button class="btn btn-outline-light" onclick="exportData()">
+                    <i class="fas fa-download"></i> தரவு ஏற்றுமதி
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- பக்க வலது பட்டி -->
+            <div class="col-lg-2 col-md-3 p-0 sidebar">
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> டாஷ்போர்டு
+                    </a>
+                    <a class="nav-link" href="#" data-section="family">
+                        <i class="fas fa-home"></i> குடும்ப நிதி
+                    </a>
+                    <a class="nav-link" href="#" data-section="business">
+                        <i class="fas fa-briefcase"></i> வியாபார நிதி
+                    </a>
+                    <a class="nav-link" href="#" data-section="stock">
+                        <i class="fas fa-chart-line"></i> பங்குச்சந்தை
+                    </a>
+                    <a class="nav-link" href="#" data-section="reports">
+                        <i class="fas fa-chart-pie"></i> அறிக்கைகள்
+                    </a>
+                    <a class="nav-link" href="#" data-section="data-management">
+                        <i class="fas fa-database"></i> தரவு மேலாண்மை
+                    </a>
+                </nav>
+            </div>
+
+            <!-- முக்கிய உள்ளடக்கம் -->
+            <div class="col-lg-10 col-md-9 p-4">
+                <!-- டாஷ்போர்டு -->
+                <div id="dashboard-section" class="content-section">
+                    <h2 class="section-title"><i class="fas fa-tachometer-alt me-2"></i>டாஷ்போர்டு</h2>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card summary-card family-card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-home me-2"></i>குடும்ப நிதி</h5>
+                                    <h3 class="card-text" id="family-balance">₹0</h3>
+                                    <p class="card-text">மாத வரவு: <span class="income" id="family-income">₹0</span></p>
+                                    <p class="card-text">மாத செலவு: <span class="expense" id="family-expense">₹0</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card summary-card business-card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-briefcase me-2"></i>வியாபார நிதி</h5>
+                                    <h3 class="card-text" id="business-balance">₹0</h3>
+                                    <p class="card-text">மாத வரவு: <span class="income" id="business-income">₹0</span></p>
+                                    <p class="card-text">மாத செலவு: <span class="expense" id="business-expense">₹0</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card summary-card stock-card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>பங்குச்சந்தை</h5>
+                                    <h3 class="card-text" id="stock-value">₹0</h3>
+                                    <p class="card-text">மொத்த முதலீடு: <span id="total-investment">₹0</span></p>
+                                    <p class="card-text">மொத்த இலாபம்/நஷ்டம்: <span id="total-profit-loss">₹0</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">சமீபத்திய பதிவுகள்</div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="recent-transactions">
+                                            <thead>
+                                                <tr>
+                                                    <th>தேதி</th>
+                                                    <th>வகை</th>
+                                                    <th>விவரம்</th>
+                                                    <th>தொகை</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- சமீபத்திய பதிவுகள் இங்கு காட்டப்படும் -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">மாதாந்திர செலவு விநியோகம்</div>
+                                <div class="card-body">
+                                    <canvas id="expenseChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- குடும்ப நிதி பிரிவு -->
+                <div id="family-section" class="content-section" style="display: none;">
+                    <h2 class="section-title"><i class="fas fa-home me-2"></i>குடும்ப நிதி</h2>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">புதிய பதிவு</div>
+                                <div class="card-body">
+                                    <form id="family-form">
+                                        <div class="mb-3">
+                                            <label for="family-type" class="form-label">வகை</label>
+                                            <select class="form-select" id="family-type" required>
+                                                <option value="">தேர்ந்தெடுக்கவும்</option>
+                                                <option value="income">வரவு</option>
+                                                <option value="expense">செலவு</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="family-category" class="form-label">பிரிவு</label>
+                                            <select class="form-select" id="family-category" required>
+                                                <option value="">தேர்ந்தெடுக்கவும்</option>
+                                                <option value="food">உணவு</option>
+                                                <option value="maintenance">பராமரிப்பு</option>
+                                                <option value="bills">பில்கள்</option>
+                                                <option value="member">உறுப்பினர் செலவு</option>
+                                                <option value="other">மற்றவை</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="family-member" class="form-label">உறுப்பினர்</label>
+                                            <select class="form-select" id="family-member" required>
+                                                <option value="">தேர்ந்தெடுக்கவும்</option>
+                                                <option value="father">தந்தை</option>
+                                                <option value="mother">தாய்</option>
+                                                <option value="son">மகன்</option>
+                                                <option value="daughter">மகள்</option>
+                                                <option value="other">மற்றவை</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="family-amount" class="form-label">தொகை (₹)</label>
+                                            <input type="number" class="form-control" id="family-amount" required min="1">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="family-description" class="form-label">விவரம்</label>
+                                            <textarea class="form-control" id="family-description" rows="2"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="family-date" class="form-label">தேதி</label>
+                                            <input type="date" class="form-control" id="family-date" required>
+                                        </div>
+                                        <input type="hidden" id="family-id">
+                                        <button type="submit" class="btn btn-primary w-100" id="family-submit-btn">
+                                            <i class="fas fa-save me-1"></i>சேமிக்கவும்
+                                        </button>
+                                        <button type="button" class="btn btn-secondary w-100 mt-2" id="family-cancel-btn" style="display: none;">
+                                            <i class="fas fa-times me-1"></i>ரத்துசெய்
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>பதிவுகள்</span>
+                                    <div>
+                                        <select class="form-select form-select-sm w-auto d-inline-block" id="family-filter">
+                                            <option value="all">அனைத்தும்</option>
+                                            <option value="income">வரவு</option>
+                                            <option value="expense">செலவு</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="family-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>தேதி</th>
+                                                    <th>வகை</th>
+                                                    <th>பிரிவு</th>
+                                                    <th>உறுப்பினர்</th>
+                                                    <th>விவரம்</th>
+                                                    <th>தொகை</th>
+                                                    <th>செயல்கள்</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- குடும்ப நிதி பதிவுகள் இங்கு காட்டப்படும் -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- வியாபார நிதி பிரிவு -->
+                <div id="business-section" class="content-section" style="display: none;">
+                    <h2 class="section-title"><i class="fas fa-briefcase me-2"></i>வியாபார நிதி</h2>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">புதிய பதிவு</div>
+                                <div class="card-body">
+                                    <form id="business-form">
+                                        <div class="mb-3">
+                                            <label for="business-type" class="form-label">வகை</label>
+                                            <select class="form-select" id="business-type" required>
+                                                <option value="">தேர்ந்தெடுக்கவும்</option>
+                                                <option value="income">வரவு</option>
+                                                <option value="expense">செலவு</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="business-category" class="form-label">பிரிவு</label>
+                                            <select class="form-select" id="business-category" required>
+                                                <option value="">தேர்ந்தெடுக்கவும்</option>
+                                                <option value="sales">விற்பனை</option>
+                                                <option value="service">சேவை</option>
+                                                <option value="salary">சம்பளம்</option>
+                                                <option value="material">மூலப்பொருள்</option>
+                                                <option value="rent">வாடகை</option>
+                                                <option value="other">மற்றவை</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="business-amount" class="form-label">தொகை (₹)</label>
+                                            <input type="number" class="form-control" id="business-amount" required min="1">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="business-description" class="form-label">விவரம்</label>
+                                            <textarea class="form-control" id="business-description" rows="2"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="business-date" class="form-label">தேதி</label>
+                                            <input type="date" class="form-control" id="business-date" required>
+                                        </div>
+                                        <input type="hidden" id="business-id">
+                                        <button type="submit" class="btn btn-primary w-100" id="business-submit-btn">
+                                            <i class="fas fa-save me-1"></i>சேமிக்கவும்
+                                        </button>
+                                        <button type="button" class="btn btn-secondary w-100 mt-2" id="business-cancel-btn" style="display: none;">
+                                            <i class="fas fa-times me-1"></i>ரத்துசெய்
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>பதிவுகள்</span>
+                                    <div>
+                                        <select class="form-select form-select-sm w-auto d-inline-block" id="business-filter">
+                                            <option value="all">அனைத்தும்</option>
+                                            <option value="income">வரவு</option>
+                                            <option value="expense">செலவு</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="business-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>தேதி</th>
+                                                    <th>வகை</th>
+                                                    <th>பிரிவு</th>
+                                                    <th>விவரம்</th>
+                                                    <th>தொகை</th>
+                                                    <th>செயல்கள்</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- வியாபார நிதி பதிவுகள் இங்கு காட்டப்படும் -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- பங்குச்சந்தை பிரிவு -->
+                <div id="stock-section" class="content-section" style="display: none;">
+                    <h2 class="section-title"><i class="fas fa-chart-line me-2"></i>பங்குச்சந்தை</h2>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">புதிய பங்கு பதிவு</div>
+                                <div class="card-body">
+                                    <form id="stock-form">
+                                        <div class="mb-3">
+                                            <label for="stock-type" class="form-label">வகை</label>
+                                            <select class="form-select" id="stock-type" required>
+                                                <option value="">தேர்ந்தெடுக்கவும்</option>
+                                                <option value="buy">வாங்குதல்</option>
+                                                <option value="sell">விற்றல்</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="stock-name" class="form-label">பங்கு பெயர்</label>
+                                            <input type="text" class="form-control" id="stock-name" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="stock-quantity" class="form-label">அளவு</label>
+                                            <input type="number" class="form-control" id="stock-quantity" required min="1">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="stock-price" class="form-label">விலை ஒன்றுக்கு (₹)</label>
+                                            <input type="number" class="form-control" id="stock-price" required min="1" step="0.01">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="stock-date" class="form-label">தேதி</label>
+                                            <input type="date" class="form-control" id="stock-date" required>
+                                        </div>
+                                        <input type="hidden" id="stock-id">
+                                        <button type="submit" class="btn btn-primary w-100" id="stock-submit-btn">
+                                            <i class="fas fa-save me-1"></i>சேமிக்கவும்
+                                        </button>
+                                        <button type="button" class="btn btn-secondary w-100 mt-2" id="stock-cancel-btn" style="display: none;">
+                                            <i class="fas fa-times me-1"></i>ரத்துசெய்
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>பங்கு பதிவுகள்</span>
+                                    <div>
+                                        <select class="form-select form-select-sm w-auto d-inline-block" id="stock-filter">
+                                            <option value="all">அனைத்தும்</option>
+                                            <option value="buy">வாங்குதல்</option>
+                                            <option value="sell">விற்றல்</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="stock-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>தேதி</th>
+                                                    <th>வகை</th>
+                                                    <th>பங்கு பெயர்</th>
+                                                    <th>அளவு</th>
+                                                    <th>விலை/பங்கு</th>
+                                                    <th>மொத்த தொகை</th>
+                                                    <th>செயல்கள்</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- பங்குச்சந்தை பதிவுகள் இங்கு காட்டப்படும் -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-4">
+                                <div class="card-header">தற்போதைய பங்கு நிலவரம்</div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="stock-summary-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>பங்கு பெயர்</th>
+                                                    <th>மொத்த அளவு</th>
+                                                    <th>சராசரி விலை</th>
+                                                    <th>மொத்த முதலீடு</th>
+                                                    <th>தற்போதைய விலை</th>
+                                                    <th>தற்போதைய மதிப்பு</th>
+                                                    <th>இலாபம்/நஷ்டம்</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- பங்கு சுருக்கம் இங்கு காட்டப்படும் -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- அறிக்கைகள் பிரிவு -->
+                <div id="reports-section" class="content-section" style="display: none;">
+                    <h2 class="section-title"><i class="fas fa-chart-pie me-2"></i>அறிக்கைகள்</h2>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">மாதாந்திர வரவு செலவு</div>
+                                <div class="card-body">
+                                    <canvas id="monthlyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">குடும்ப செலவு பிரிவுகள்</div>
+                                <div class="card-body">
+                                    <canvas id="familyCategoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">வியாபார வரவு செலவு</div>
+                                <div class="card-body">
+                                    <canvas id="businessChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">பங்கு செயல்பாடு</div>
+                                <div class="card-body">
+                                    <canvas id="stockChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- தரவு மேலாண்மை பிரிவு -->
+                <div id="data-management-section" class="content-section" style="display: none;">
+                    <h2 class="section-title"><i class="fas fa-database me-2"></i>தரவு மேலாண்மை</h2>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">தரவு ஏற்றுமதி</div>
+                                <div class="card-body">
+                                    <p>உங்கள் அனைத்து நிதி தரவையும் JSON வடிவத்தில் பதிவிறக்கம் செய்யலாம்.</p>
+                                    <button class="btn btn-primary" onclick="exportData()">
+                                        <i class="fas fa-download me-1"></i>தரவு ஏற்றுமதி
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">தரவு இறக்குமதி</div>
+                                <div class="card-body">
+                                    <p>முன்பு ஏற்றுமதி செய்த தரவை மீட்டமைக்க JSON கோப்பை பதிவேற்றவும்.</p>
+                                    <div class="mb-3">
+                                        <input class="form-control" type="file" id="import-file" accept=".json">
+                                    </div>
+                                    <button class="btn btn-success" onclick="importData()">
+                                        <i class="fas fa-upload me-1"></i>தரவு இறக்குமதி
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">தரவு மீட்டமைப்பு</div>
+                                <div class="card-body">
+                                    <p class="text-danger"><strong>எச்சரிக்கை:</strong> இந்த செயல் உங்கள் அனைத்து தரவையும் நிரந்தரமாக அழிக்கும். முன்பு ஏற்றுமதி செய்து வைத்திருப்பது நல்லது.</p>
+                                    <button class="btn btn-danger" onclick="resetData()">
+                                        <i class="fas fa-trash-alt me-1"></i>அனைத்து தரவையும் மீட்டமை
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // தற்போதைய தேதியை காட்டு
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('ta-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long'
+        });
+        
+        // பக்க வலது பட்டி இணைப்புகள்
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // சரியான பிரிவை காட்டு
+                const section = this.getAttribute('data-section');
+                showSection(section);
+                
+                // செயலில் உள்ள இணைப்பை மாற்று
+                document.querySelectorAll('.sidebar .nav-link').forEach(item => {
+                    item.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+        
+        // பிரிவு காட்டும் செயல்பாடு
+        function showSection(sectionId) {
+            // அனைத்து பிரிவுகளையும் மறை
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // கோரப்பட்ட பிரிவை காட்டு
+            document.getElementById(`${sectionId}-section`).style.display = 'block';
+            
+            // தரவை புதுப்பிக்கவும்
+            if (sectionId === 'dashboard') {
+                updateDashboard();
+            } else if (sectionId === 'family') {
+                loadFamilyData();
+            } else if (sectionId === 'business') {
+                loadBusinessData();
+            } else if (sectionId === 'stock') {
+                loadStockData();
+            } else if (sectionId === 'reports') {
+                generateReports();
+            }
+        }
+        
+        // தரவு சேமிப்பு விசைகள்
+        const STORAGE_KEYS = {
+            FAMILY: 'familyFinanceData',
+            BUSINESS: 'businessFinanceData',
+            STOCK: 'stockMarketData'
+        };
+        
+        // ஆரம்ப தரவு
+        const initialData = {
+            family: [
+                { id: 1, type: 'expense', category: 'food', member: 'father', amount: 1500, description: 'காய்கறிகள்', date: '2023-10-26' },
+                { id: 2, type: 'expense', category: 'bills', member: 'father', amount: 2500, description: 'மின்சார பில்', date: '2023-10-25' },
+                { id: 3, type: 'income', category: 'other', member: 'father', amount: 50000, description: 'சம்பளம்', date: '2023-10-20' },
+                { id: 4, type: 'expense', category: 'maintenance', member: 'father', amount: 3000, description: 'கார் பராமரிப்பு', date: '2023-10-18' }
+            ],
+            business: [
+                { id: 1, type: 'income', category: 'sales', amount: 75000, description: 'தயாரிப்பு விற்பனை', date: '2023-10-25' },
+                { id: 2, type: 'expense', category: 'salary', amount: 30000, description: 'ஊழியர் சம்பளம்', date: '2023-10-20' },
+                { id: 3, type: 'expense', category: 'material', amount: 20000, description: 'மூலப்பொருள் கொள்முதல்', date: '2023-10-15' },
+                { id: 4, type: 'income', category: 'service', amount: 15000, description: 'சேவை கட்டணம்', date: '2023-10-10' }
+            ],
+            stock: [
+                { id: 1, type: 'buy', name: 'RELIANCE', quantity: 10, price: 2350, date: '2023-10-20' },
+                { id: 2, type: 'buy', name: 'TCS', quantity: 5, price: 3450, date: '2023-10-15' },
+                { id: 3, type: 'buy', name: 'INFY', quantity: 8, price: 1450, date: '2023-10-10' },
+                { id: 4, type: 'sell', name: 'RELIANCE', quantity: 5, price: 2400, date: '2023-10-25' }
+            ]
+        };
+        
+        // தரவு ஏற்றம்
+        function loadData() {
+            // உள்ளூர் சேமிப்பிலிருந்து தரவை ஏற்றம் செய்யவும் அல்லது ஆரம்ப தரவை பயன்படுத்தவும்
+            let familyData = localStorage.getItem(STORAGE_KEYS.FAMILY);
+            let businessData = localStorage.getItem(STORAGE_KEYS.BUSINESS);
+            let stockData = localStorage.getItem(STORAGE_KEYS.STOCK);
+            
+            return {
+                family: familyData ? JSON.parse(familyData) : initialData.family,
+                business: businessData ? JSON.parse(businessData) : initialData.business,
+                stock: stockData ? JSON.parse(stockData) : initialData.stock
+            };
+        }
+        
+        // தரவு சேமிப்பு
+        function saveData(dataType, data) {
+            localStorage.setItem(dataType, JSON.stringify(data));
+        }
+        
+        // டாஷ்போர்டு புதுப்பிப்பு
+        function updateDashboard() {
+            const data = loadData();
+            
+            // குடும்ப நிதி கணக்கீடு
+            let familyIncome = 0;
+            let familyExpense = 0;
+            
+            data.family.forEach(item => {
+                if (item.type === 'income') {
+                    familyIncome += item.amount;
+                } else {
+                    familyExpense += item.amount;
+                }
+            });
+            
+            const familyBalance = familyIncome - familyExpense;
+            
+            document.getElementById('family-income').textContent = `₹${familyIncome.toLocaleString('en-IN')}`;
+            document.getElementById('family-expense').textContent = `₹${familyExpense.toLocaleString('en-IN')}`;
+            document.getElementById('family-balance').textContent = `₹${familyBalance.toLocaleString('en-IN')}`;
+            
+            // வியாபார நிதி கணக்கீடு
+            let businessIncome = 0;
+            let businessExpense = 0;
+            
+            data.business.forEach(item => {
+                if (item.type === 'income') {
+                    businessIncome += item.amount;
+                } else {
+                    businessExpense += item.amount;
+                }
+            });
+            
+            const businessBalance = businessIncome - businessExpense;
+            
+            document.getElementById('business-income').textContent = `₹${businessIncome.toLocaleString('en-IN')}`;
+            document.getElementById('business-expense').textContent = `₹${businessExpense.toLocaleString('en-IN')}`;
+            document.getElementById('business-balance').textContent = `₹${businessBalance.toLocaleString('en-IN')}`;
+            
+            // பங்குச்சந்தை கணக்கீடு
+            let totalInvestment = 0;
+            let stockValue = 0;
+            
+            // பங்கு சுருக்கம் கணக்கீடு
+            const stockSummary = {};
+            
+            data.stock.forEach(transaction => {
+                const stockName = transaction.name;
+                if (!stockSummary[stockName]) {
+                    stockSummary[stockName] = {
+                        quantity: 0,
+                        totalCost: 0,
+                        totalSold: 0,
+                        totalSaleAmount: 0
+                    };
+                }
+                
+                if (transaction.type === 'buy') {
+                    stockSummary[stockName].quantity += transaction.quantity;
+                    stockSummary[stockName].totalCost += transaction.quantity * transaction.price;
+                } else {
+                    stockSummary[stockName].quantity -= transaction.quantity;
+                    stockSummary[stockName].totalSold += transaction.quantity;
+                    stockSummary[stockName].totalSaleAmount += transaction.quantity * transaction.price;
+                }
+            });
+            
+            // மொத்த முதலீடு மற்றும் தற்போதைய மதிப்பு கணக்கீடு
+            Object.keys(stockSummary).forEach(stockName => {
+                const stock = stockSummary[stockName];
+                if (stock.quantity > 0) {
+                    totalInvestment += stock.totalCost;
+                    // எளிமைக்காக, வாங்கிய விலையை தற்போதைய விலையாக எடுத்துக்கொள்கிறோம்
+                    stockValue += stock.quantity * (stock.totalCost / (stock.quantity + stock.totalSold));
+                }
+            });
+            
+            const totalProfitLoss = stockValue - totalInvestment;
+            
+            document.getElementById('total-investment').textContent = `₹${totalInvestment.toLocaleString('en-IN')}`;
+            document.getElementById('stock-value').textContent = `₹${stockValue.toLocaleString('en-IN')}`;
+            document.getElementById('total-profit-loss').textContent = `₹${totalProfitLoss.toLocaleString('en-IN')}`;
+            
+            // சமீபத்திய பதிவுகள்
+            const recentTransactions = [];
+            
+            // குடும்ப பதிவுகள்
+            data.family.slice(-3).forEach(item => {
+                recentTransactions.push({
+                    date: item.date,
+                    type: 'குடும்பம்',
+                    description: item.description || `${item.category} - ${item.member}`,
+                    amount: item.type === 'income' ? `+₹${item.amount}` : `-₹${item.amount}`,
+                    color: item.type === 'income' ? 'income' : 'expense'
+                });
+            });
+            
+            // வியாபார பதிவுகள்
+            data.business.slice(-3).forEach(item => {
+                recentTransactions.push({
+                    date: item.date,
+                    type: 'வியாபாரம்',
+                    description: item.description || item.category,
+                    amount: item.type === 'income' ? `+₹${item.amount}` : `-₹${item.amount}`,
+                    color: item.type === 'income' ? 'income' : 'expense'
+                });
+            });
+            
+            // பங்கு பதிவுகள்
+            data.stock.slice(-3).forEach(item => {
+                recentTransactions.push({
+                    date: item.date,
+                    type: 'பங்கு',
+                    description: `${item.name} ${item.type === 'buy' ? 'வாங்குதல்' : 'விற்றல்'}`,
+                    amount: item.type === 'buy' ? `-₹${item.quantity * item.price}` : `+₹${item.quantity * item.price}`,
+                    color: item.type === 'buy' ? 'expense' : 'income'
+                });
+            });
+            
+            // தேதி வாரியாக வரிசைப்படுத்து
+            recentTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // அட்டவணையை புதுப்பிக்கவும்
+            const recentTableBody = document.querySelector('#recent-transactions tbody');
+            recentTableBody.innerHTML = '';
+            
+            recentTransactions.slice(0, 5).forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${transaction.date}</td>
+                    <td>${transaction.type}</td>
+                    <td>${transaction.description}</td>
+                    <td class="${transaction.color}">${transaction.amount}</td>
+                `;
+                recentTableBody.appendChild(row);
+            });
+            
+            // செலவு விளக்கப்படம்
+            updateExpenseChart(data);
+        }
+        
+        // செலவு விளக்கப்படம்
+        function updateExpenseChart(data) {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            
+            // குடும்ப செலவு பிரிவுகள்
+            const familyCategories = {
+                food: 0,
+                maintenance: 0,
+                bills: 0,
+                member: 0,
+                other: 0
+            };
+            
+            data.family.forEach(item => {
+                if (item.type === 'expense' && familyCategories.hasOwnProperty(item.category)) {
+                    familyCategories[item.category] += item.amount;
+                }
+            });
+            
+            // பெயர்களை தமிழில் மாற்றவும்
+            const categoryLabels = {
+                food: 'உணவு',
+                maintenance: 'பராமரிப்பு',
+                bills: 'பில்கள்',
+                member: 'உறுப்பினர்',
+                other: 'மற்றவை'
+            };
+            
+            const labels = Object.keys(familyCategories).map(key => categoryLabels[key]);
+            const values = Object.values(familyCategories);
+            
+            // முந்தைய விளக்கப்படத்தை அழிக்கவும்
+            if (window.expenseChart instanceof Chart) {
+                window.expenseChart.destroy();
+            }
+            
+            // புதிய விளக்கப்படத்தை உருவாக்கவும்
+            window.expenseChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ],
+                        hoverBackgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'குடும்ப செலவு விநியோகம்'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // குடும்ப நிதி தரவை ஏற்றம்
+        function loadFamilyData() {
+            const data = loadData();
+            const filterValue = document.getElementById('family-filter').value;
+            
+            const tableBody = document.querySelector('#family-table tbody');
+            tableBody.innerHTML = '';
+            
+            data.family.forEach(item => {
+                if (filterValue !== 'all' && item.type !== filterValue) return;
+                
+                // பெயர்களை தமிழில் மாற்றவும்
+                const typeText = item.type === 'income' ? 'வரவு' : 'செலவு';
+                
+                const categoryTexts = {
+                    food: 'உணவு',
+                    maintenance: 'பராமரிப்பு',
+                    bills: 'பில்கள்',
+                    member: 'உறுப்பினர்',
+                    other: 'மற்றவை'
+                };
+                
+                const memberTexts = {
+                    father: 'தந்தை',
+                    mother: 'தாய்',
+                    son: 'மகன்',
+                    daughter: 'மகள்',
+                    other: 'மற்றவை'
+                };
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td><span class="${item.type === 'income' ? 'income' : 'expense'}">${typeText}</span></td>
+                    <td>${categoryTexts[item.category] || item.category}</td>
+                    <td>${memberTexts[item.member] || item.member}</td>
+                    <td>${item.description || '-'}</td>
+                    <td class="${item.type === 'income' ? 'income' : 'expense'}">${item.type === 'income' ? '+' : '-'}₹${item.amount.toLocaleString('en-IN')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editFamilyItem(${item.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFamilyItem(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // தேதி இடத்தை தற்போதைய தேதியுடன் பூர்த்தி செய்யவும்
+            document.getElementById('family-date').value = new Date().toISOString().split('T')[0];
+        }
+        
+        // குடும்ப படிவம் சமர்ப்பிப்பு
+        document.getElementById('family-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const data = loadData();
+            const id = document.getElementById('family-id').value;
+            const isEdit = id !== '';
+            
+            const item = {
+                id: isEdit ? parseInt(id) : data.family.length > 0 ? Math.max(...data.family.map(item => item.id)) + 1 : 1,
+                type: document.getElementById('family-type').value,
+                category: document.getElementById('family-category').value,
+                member: document.getElementById('family-member').value,
+                amount: parseFloat(document.getElementById('family-amount').value),
+                description: document.getElementById('family-description').value,
+                date: document.getElementById('family-date').value
+            };
+            
+            if (isEdit) {
+                // திருத்தம்
+                const index = data.family.findIndex(i => i.id === parseInt(id));
+                if (index !== -1) {
+                    data.family[index] = item;
+                }
+            } else {
+                // புதிய பதிவு
+                data.family.push(item);
+            }
+            
+            saveData(STORAGE_KEYS.FAMILY, data.family);
+            loadFamilyData();
+            
+            // படிவத்தை மீட்டமைக்கவும்
+            resetFamilyForm();
+            
+            // டாஷ்போர்டை புதுப்பிக்கவும்
+            updateDashboard();
+        });
+        
+        // குடும்ப படிவம் மீட்டமைப்பு
+        function resetFamilyForm() {
+            document.getElementById('family-id').value = '';
+            document.getElementById('family-form').reset();
+            document.getElementById('family-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('family-submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>சேமிக்கவும்';
+            document.getElementById('family-cancel-btn').style.display = 'none';
+        }
+        
+        // குடும்ப உருப்படியை திருத்து
+        function editFamilyItem(id) {
+            const data = loadData();
+            const item = data.family.find(item => item.id === id);
+            
+            if (item) {
+                document.getElementById('family-id').value = item.id;
+                document.getElementById('family-type').value = item.type;
+                document.getElementById('family-category').value = item.category;
+                document.getElementById('family-member').value = item.member;
+                document.getElementById('family-amount').value = item.amount;
+                document.getElementById('family-description').value = item.description || '';
+                document.getElementById('family-date').value = item.date;
+                
+                document.getElementById('family-submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>புதுப்பிக்கவும்';
+                document.getElementById('family-cancel-btn').style.display = 'block';
+            }
+        }
+        
+        // குடும்ப உருப்படியை நீக்கு
+        function deleteFamilyItem(id) {
+            if (confirm('இந்த பதிவை நீக்க விரும்புகிறீர்களா?')) {
+                const data = loadData();
+                data.family = data.family.filter(item => item.id !== id);
+                saveData(STORAGE_KEYS.FAMILY, data.family);
+                loadFamilyData();
+                updateDashboard();
+            }
+        }
+        
+        // குடும்ப படிவ ரத்து பொத்தான்
+        document.getElementById('family-cancel-btn').addEventListener('click', resetFamilyForm);
+        
+        // குடும்ப வடிகட்டி
+        document.getElementById('family-filter').addEventListener('change', loadFamilyData);
+        
+        // வியாபார நிதி தரவை ஏற்றம்
+        function loadBusinessData() {
+            const data = loadData();
+            const filterValue = document.getElementById('business-filter').value;
+            
+            const tableBody = document.querySelector('#business-table tbody');
+            tableBody.innerHTML = '';
+            
+            data.business.forEach(item => {
+                if (filterValue !== 'all' && item.type !== filterValue) return;
+                
+                // பெயர்களை தமிழில் மாற்றவும்
+                const typeText = item.type === 'income' ? 'வரவு' : 'செலவு';
+                
+                const categoryTexts = {
+                    sales: 'விற்பனை',
+                    service: 'சேவை',
+                    salary: 'சம்பளம்',
+                    material: 'மூலப்பொருள்',
+                    rent: 'வாடகை',
+                    other: 'மற்றவை'
+                };
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td><span class="${item.type === 'income' ? 'income' : 'expense'}">${typeText}</span></td>
+                    <td>${categoryTexts[item.category] || item.category}</td>
+                    <td>${item.description || '-'}</td>
+                    <td class="${item.type === 'income' ? 'income' : 'expense'}">${item.type === 'income' ? '+' : '-'}₹${item.amount.toLocaleString('en-IN')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editBusinessItem(${item.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteBusinessItem(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // தேதி இடத்தை தற்போதைய தேதியுடன் பூர்த்தி செய்யவும்
+            document.getElementById('business-date').value = new Date().toISOString().split('T')[0];
+        }
+        
+        // வியாபார படிவம் சமர்ப்பிப்பு
+        document.getElementById('business-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const data = loadData();
+            const id = document.getElementById('business-id').value;
+            const isEdit = id !== '';
+            
+            const item = {
+                id: isEdit ? parseInt(id) : data.business.length > 0 ? Math.max(...data.business.map(item => item.id)) + 1 : 1,
+                type: document.getElementById('business-type').value,
+                category: document.getElementById('business-category').value,
+                amount: parseFloat(document.getElementById('business-amount').value),
+                description: document.getElementById('business-description').value,
+                date: document.getElementById('business-date').value
+            };
+            
+            if (isEdit) {
+                // திருத்தம்
+                const index = data.business.findIndex(i => i.id === parseInt(id));
+                if (index !== -1) {
+                    data.business[index] = item;
+                }
+            } else {
+                // புதிய பதிவு
+                data.business.push(item);
+            }
+            
+            saveData(STORAGE_KEYS.BUSINESS, data.business);
+            loadBusinessData();
+            
+            // படிவத்தை மீட்டமைக்கவும்
+            resetBusinessForm();
+            
+            // டாஷ்போர்டை புதுப்பிக்கவும்
+            updateDashboard();
+        });
+        
+        // வியாபார படிவம் மீட்டமைப்பு
+        function resetBusinessForm() {
+            document.getElementById('business-id').value = '';
+            document.getElementById('business-form').reset();
+            document.getElementById('business-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('business-submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>சேமிக்கவும்';
+            document.getElementById('business-cancel-btn').style.display = 'none';
+        }
+        
+        // வியாபார உருப்படியை திருத்து
+        function editBusinessItem(id) {
+            const data = loadData();
+            const item = data.business.find(item => item.id === id);
+            
+            if (item) {
+                document.getElementById('business-id').value = item.id;
+                document.getElementById('business-type').value = item.type;
+                document.getElementById('business-category').value = item.category;
+                document.getElementById('business-amount').value = item.amount;
+                document.getElementById('business-description').value = item.description || '';
+                document.getElementById('business-date').value = item.date;
+                
+                document.getElementById('business-submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>புதுப்பிக்கவும்';
+                document.getElementById('business-cancel-btn').style.display = 'block';
+            }
+        }
+        
+        // வியாபார உருப்படியை நீக்கு
+        function deleteBusinessItem(id) {
+            if (confirm('இந்த பதிவை நீக்க விரும்புகிறீர்களா?')) {
+                const data = loadData();
+                data.business = data.business.filter(item => item.id !== id);
+                saveData(STORAGE_KEYS.BUSINESS, data.business);
+                loadBusinessData();
+                updateDashboard();
+            }
+        }
+        
+        // வியாபார படிவ ரத்து பொத்தான்
+        document.getElementById('business-cancel-btn').addEventListener('click', resetBusinessForm);
+        
+        // வியாபார வடிகட்டி
+        document.getElementById('business-filter').addEventListener('change', loadBusinessData);
+        
+        // பங்குச்சந்தை தரவை ஏற்றம்
+        function loadStockData() {
+            const data = loadData();
+            const filterValue = document.getElementById('stock-filter').value;
+            
+            // பங்கு பதிவுகள் அட்டவணை
+            const tableBody = document.querySelector('#stock-table tbody');
+            tableBody.innerHTML = '';
+            
+            data.stock.forEach(item => {
+                if (filterValue !== 'all' && item.type !== filterValue) return;
+                
+                const typeText = item.type === 'buy' ? 'வாங்குதல்' : 'விற்றல்';
+                const totalAmount = item.quantity * item.price;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td><span class="${item.type === 'buy' ? 'expense' : 'income'}">${typeText}</span></td>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toLocaleString('en-IN')}</td>
+                    <td class="${item.type === 'buy' ? 'expense' : 'income'}">${item.type === 'buy' ? '-' : '+'}₹${totalAmount.toLocaleString('en-IN')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editStockItem(${item.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteStockItem(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // பங்கு சுருக்க அட்டவணை
+            const summaryTableBody = document.querySelector('#stock-summary-table tbody');
+            summaryTableBody.innerHTML = '';
+            
+            // பங்கு சுருக்கம் கணக்கீடு
+            const stockSummary = {};
+            
+            data.stock.forEach(transaction => {
+                const stockName = transaction.name;
+                if (!stockSummary[stockName]) {
+                    stockSummary[stockName] = {
+                        quantity: 0,
+                        totalCost: 0,
+                        totalSold: 0,
+                        totalSaleAmount: 0
+                    };
+                }
+                
+                if (transaction.type === 'buy') {
+                    stockSummary[stockName].quantity += transaction.quantity;
+                    stockSummary[stockName].totalCost += transaction.quantity * transaction.price;
+                } else {
+                    stockSummary[stockName].quantity -= transaction.quantity;
+                    stockSummary[stockName].totalSold += transaction.quantity;
+                    stockSummary[stockName].totalSaleAmount += transaction.quantity * transaction.price;
+                }
+            });
+            
+            // சுருக்க அட்டவணையை பூர்த்தி செய்யவும்
+            Object.keys(stockSummary).forEach(stockName => {
+                const stock = stockSummary[stockName];
+                if (stock.quantity <= 0) return;
+                
+                const avgPrice = stock.totalCost / (stock.quantity + stock.totalSold);
+                const currentPrice = avgPrice * 1.05; // எளிமைக்காக 5% அதிகரிப்பு
+                const currentValue = stock.quantity * currentPrice;
+                const profitLoss = currentValue - (stock.quantity * avgPrice);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${stockName}</td>
+                    <td>${stock.quantity}</td>
+                    <td>₹${avgPrice.toFixed(2)}</td>
+                    <td>₹${(stock.quantity * avgPrice).toLocaleString('en-IN')}</td>
+                    <td>₹${currentPrice.toFixed(2)}</td>
+                    <td>₹${currentValue.toLocaleString('en-IN')}</td>
+                    <td class="${profitLoss >= 0 ? 'income' : 'expense'}">${profitLoss >= 0 ? '+' : ''}₹${profitLoss.toLocaleString('en-IN')}</td>
+                `;
+                summaryTableBody.appendChild(row);
+            });
+            
+            // தேதி இடத்தை தற்போதைய தேதியுடன் பூர்த்தி செய்யவும்
+            document.getElementById('stock-date').value = new Date().toISOString().split('T')[0];
+        }
+        
+        // பங்கு படிவம் சமர்ப்பிப்பு
+        document.getElementById('stock-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const data = loadData();
+            const id = document.getElementById('stock-id').value;
+            const isEdit = id !== '';
+            
+            const item = {
+                id: isEdit ? parseInt(id) : data.stock.length > 0 ? Math.max(...data.stock.map(item => item.id)) + 1 : 1,
+                type: document.getElementById('stock-type').value,
+                name: document.getElementById('stock-name').value.toUpperCase(),
+                quantity: parseInt(document.getElementById('stock-quantity').value),
+                price: parseFloat(document.getElementById('stock-price').value),
+                date: document.getElementById('stock-date').value
+            };
+            
+            if (isEdit) {
+                // திருத்தம்
+                const index = data.stock.findIndex(i => i.id === parseInt(id));
+                if (index !== -1) {
+                    data.stock[index] = item;
+                }
+            } else {
+                // புதிய பதிவு
+                data.stock.push(item);
+            }
+            
+            saveData(STORAGE_KEYS.STOCK, data.stock);
+            loadStockData();
+            
+            // படிவத்தை மீட்டமைக்கவும்
+            resetStockForm();
+            
+            // டாஷ்போர்டை புதுப்பிக்கவும்
+            updateDashboard();
+        });
+        
+        // பங்கு படிவம் மீட்டமைப்பு
+        function resetStockForm() {
+            document.getElementById('stock-id').value = '';
+            document.getElementById('stock-form').reset();
+            document.getElementById('stock-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('stock-submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>சேமிக்கவும்';
+            document.getElementById('stock-cancel-btn').style.display = 'none';
+        }
+        
+        // பங்கு உருப்படியை திருத்து
+        function editStockItem(id) {
+            const data = loadData();
+            const item = data.stock.find(item => item.id === id);
+            
+            if (item) {
+                document.getElementById('stock-id').value = item.id;
+                document.getElementById('stock-type').value = item.type;
+                document.getElementById('stock-name').value = item.name;
+                document.getElementById('stock-quantity').value = item.quantity;
+                document.getElementById('stock-price').value = item.price;
+                document.getElementById('stock-date').value = item.date;
+                
+                document.getElementById('stock-submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>புதுப்பிக்கவும்';
+                document.getElementById('stock-cancel-btn').style.display = 'block';
+            }
+        }
+        
+        // பங்கு உருப்படியை நீக்கு
+        function deleteStockItem(id) {
+            if (confirm('இந்த பதிவை நீக்க விரும்புகிறீர்களா?')) {
+                const data = loadData();
+                data.stock = data.stock.filter(item => item.id !== id);
+                saveData(STORAGE_KEYS.STOCK, data.stock);
+                loadStockData();
+                updateDashboard();
+            }
+        }
+        
+        // பங்கு படிவ ரத்து பொத்தான்
+        document.getElementById('stock-cancel-btn').addEventListener('click', resetStockForm);
+        
+        // பங்கு வடிகட்டி
+        document.getElementById('stock-filter').addEventListener('change', loadStockData);
+        
+        // அறிக்கைகள் உருவாக்கம்
+        function generateReports() {
+            const data = loadData();
+            
+            // மாதாந்திர வரவு செலவு விளக்கப்படம்
+            generateMonthlyChart(data);
+            
+            // குடும்ப செலவு பிரிவுகள் விளக்கப்படம்
+            generateFamilyCategoryChart(data);
+            
+            // வியாபார வரவு செலவு விளக்கப்படம்
+            generateBusinessChart(data);
+            
+            // பங்கு செயல்பாடு விளக்கப்படம்
+            generateStockChart(data);
+        }
+        
+        // மாதாந்திர வரவு செலவு விளக்கப்படம்
+        function generateMonthlyChart(data) {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            
+            // கடந்த 6 மாதங்களுக்கான தரவு
+            const months = [];
+            const familyIncome = [];
+            const familyExpense = [];
+            const businessIncome = [];
+            const businessExpense = [];
+            
+            const today = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const monthYear = date.toLocaleDateString('ta-IN', { month: 'short', year: 'numeric' });
+                months.push(monthYear);
+                
+                // குடும்ப வரவு செலவு கணக்கீடு
+                let famIncome = 0;
+                let famExpense = 0;
+                
+                data.family.forEach(item => {
+                    const itemDate = new Date(item.date);
+                    if (itemDate.getMonth() === date.getMonth() && itemDate.getFullYear() === date.getFullYear()) {
+                        if (item.type === 'income') {
+                            famIncome += item.amount;
+                        } else {
+                            famExpense += item.amount;
+                        }
+                    }
+                });
+                
+                familyIncome.push(famIncome);
+                familyExpense.push(famExpense);
+                
+                // வியாபார வரவு செலவு கணக்கீடு
+                let busIncome = 0;
+                let busExpense = 0;
+                
+                data.business.forEach(item => {
+                    const itemDate = new Date(item.date);
+                    if (itemDate.getMonth() === date.getMonth() && itemDate.getFullYear() === date.getFullYear()) {
+                        if (item.type === 'income') {
+                            busIncome += item.amount;
+                        } else {
+                            busExpense += item.amount;
+                        }
+                    }
+                });
+                
+                businessIncome.push(busIncome);
+                businessExpense.push(busExpense);
+            }
+            
+            // முந்தைய விளக்கப்படத்தை அழிக்கவும்
+            if (window.monthlyChart instanceof Chart) {
+                window.monthlyChart.destroy();
+            }
+            
+            // புதிய விளக்கப்படத்தை உருவாக்கவும்
+            window.monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'குடும்ப வரவு',
+                            data: familyIncome,
+                            backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                            borderColor: 'rgba(39, 174, 96, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'குடும்ப செலவு',
+                            data: familyExpense,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'வியாபார வரவு',
+                            data: businessIncome,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'வியாபார செலவு',
+                            data: businessExpense,
+                            backgroundColor: 'rgba(155, 89, 182, 0.7)',
+                            borderColor: 'rgba(155, 89, 182, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'மாதாந்திர வரவு செலவு'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // குடும்ப செலவு பிரிவுகள் விளக்கப்படம்
+        function generateFamilyCategoryChart(data) {
+            const ctx = document.getElementById('familyCategoryChart').getContext('2d');
+            
+            // குடும்ப செலவு பிரிவுகள்
+            const familyCategories = {
+                food: 0,
+                maintenance: 0,
+                bills: 0,
+                member: 0,
+                other: 0
+            };
+            
+            data.family.forEach(item => {
+                if (item.type === 'expense' && familyCategories.hasOwnProperty(item.category)) {
+                    familyCategories[item.category] += item.amount;
+                }
+            });
+            
+            // பெயர்களை தமிழில் மாற்றவும்
+            const categoryLabels = {
+                food: 'உணவு',
+                maintenance: 'பராமரிப்பு',
+                bills: 'பில்கள்',
+                member: 'உறுப்பினர்',
+                other: 'மற்றவை'
+            };
+            
+            const labels = Object.keys(familyCategories).map(key => categoryLabels[key]);
+            const values = Object.values(familyCategories);
+            
+            // முந்தைய விளக்கப்படத்தை அழிக்கவும்
+            if (window.familyCategoryChart instanceof Chart) {
+                window.familyCategoryChart.destroy();
+            }
+            
+            // புதிய விளக்கப்படத்தை உருவாக்கவும்
+            window.familyCategoryChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ],
+                        hoverBackgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'குடும்ப செலவு பிரிவுகள்'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // வியாபார வரவு செலவு விளக்கப்படம்
+        function generateBusinessChart(data) {
+            const ctx = document.getElementById('businessChart').getContext('2d');
+            
+            // வியாபார வரவு செலவு பிரிவுகள்
+            const businessCategories = {
+                sales: { income: 0, expense: 0 },
+                service: { income: 0, expense: 0 },
+                salary: { income: 0, expense: 0 },
+                material: { income: 0, expense: 0 },
+                rent: { income: 0, expense: 0 },
+                other: { income: 0, expense: 0 }
+            };
+            
+            data.business.forEach(item => {
+                if (businessCategories.hasOwnProperty(item.category)) {
+                    if (item.type === 'income') {
+                        businessCategories[item.category].income += item.amount;
+                    } else {
+                        businessCategories[item.category].expense += item.amount;
+                    }
+                }
+            });
+            
+            // பெயர்களை தமிழில் மாற்றவும்
+            const categoryLabels = {
+                sales: 'விற்பனை',
+                service: 'சேவை',
+                salary: 'சம்பளம்',
+                material: 'மூலப்பொருள்',
+                rent: 'வாடகை',
+                other: 'மற்றவை'
+            };
+            
+            const labels = Object.keys(businessCategories).map(key => categoryLabels[key]);
+            const incomeData = Object.values(businessCategories).map(item => item.income);
+            const expenseData = Object.values(businessCategories).map(item => item.expense);
+            
+            // முந்தைய விளக்கப்படத்தை அழிக்கவும்
+            if (window.businessChart instanceof Chart) {
+                window.businessChart.destroy();
+            }
+            
+            // புதிய விளக்கப்படத்தை உருவாக்கவும்
+            window.businessChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'வரவு',
+                            data: incomeData,
+                            backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                            borderColor: 'rgba(39, 174, 96, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'செலவு',
+                            data: expenseData,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'வியாபார வரவு செலவு பிரிவுகள்'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // பங்கு செயல்பாடு விளக்கப்படம்
+        function generateStockChart(data) {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            
+            // பங்கு வாங்குதல் மற்றும் விற்றல்
+            const stockNames = [];
+            const buyData = [];
+            const sellData = [];
+            
+            const stockTransactions = {};
+            
+            data.stock.forEach(item => {
+                if (!stockTransactions[item.name]) {
+                    stockTransactions[item.name] = { buy: 0, sell: 0 };
+                }
+                
+                if (item.type === 'buy') {
+                    stockTransactions[item.name].buy += item.quantity * item.price;
+                } else {
+                    stockTransactions[item.name].sell += item.quantity * item.price;
+                }
+            });
+            
+            Object.keys(stockTransactions).forEach(stockName => {
+                stockNames.push(stockName);
+                buyData.push(stockTransactions[stockName].buy);
+                sellData.push(stockTransactions[stockName].sell);
+            });
+            
+            // முந்தைய விளக்கப்படத்தை அழிக்கவும்
+            if (window.stockChart instanceof Chart) {
+                window.stockChart.destroy();
+            }
+            
+            // புதிய விளக்கப்படத்தை உருவாக்கவும்
+            window.stockChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: stockNames,
+                    datasets: [
+                        {
+                            label: 'வாங்குதல்',
+                            data: buyData,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'விற்றல்',
+                            data: sellData,
+                            backgroundColor: 'rgba(243, 156, 18, 0.7)',
+                            borderColor: 'rgba(243, 156, 18, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'பங்கு வாங்குதல் மற்றும் விற்றல்'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // தரவு ஏற்றுமதி
+        function exportData() {
+            const data = loadData();
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'வரவு-செலவு-தரவு-' + new Date().toISOString().split('T')[0] + '.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+        
+        // தரவு இறக்குமதி
+        function importData() {
+            const fileInput = document.getElementById('import-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('தயவு செய்து ஒரு JSON கோப்பை தேர்ந்தெடுக்கவும்');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // தரவு சரிபார்க்கவும்
+                    if (data.family && data.business && data.stock) {
+                        saveData(STORAGE_KEYS.FAMILY, data.family);
+                        saveData(STORAGE_KEYS.BUSINESS, data.business);
+                        saveData(STORAGE_KEYS.STOCK, data.stock);
+                        
+                        alert('தரவு வெற்றிகரமாக இறக்குமதி செய்யப்பட்டது!');
+                        
+                        // டாஷ்போர்டை புதுப்பிக்கவும்
+                        updateDashboard();
+                        
+                        // தற்போதைய பிரிவை புதுப்பிக்கவும்
+                        const currentSection = document.querySelector('.sidebar .nav-link.active').getAttribute('data-section');
+                        showSection(currentSection);
+                    } else {
+                        alert('தவறான கோப்பு வடிவம். சரியான வரவு செலவு தரவு கோப்பு இல்லை.');
+                    }
+                } catch (error) {
+                    alert('கோப்பைப் படிக்க முடியவில்லை: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // தரவு மீட்டமைப்பு
+        function resetData() {
+            if (confirm('நீங்கள் உறுதியாக இருக்கிறீர்களா? இது உங்கள் அனைத்து தரவையும் நிரந்தரமாக அழிக்கும்.')) {
+                localStorage.removeItem(STORAGE_KEYS.FAMILY);
+                localStorage.removeItem(STORAGE_KEYS.BUSINESS);
+                localStorage.removeItem(STORAGE_KEYS.STOCK);
+                
+                alert('அனைத்து தரவும் மீட்டமைக்கப்பட்டது. ஆரம்ப தரவு ஏற்றப்படும்.');
+                
+                // டாஷ்போர்டை புதுப்பிக்கவும்
+                updateDashboard();
+                
+                // தற்போதைய பிரிவை புதுப்பிக்கவும்
+                const currentSection = document.querySelector('.sidebar .nav-link.active').getAttribute('data-section');
+                showSection(currentSection);
+            }
+        }
+        
+        // ஆரம்ப ஏற்றம்
+        document.addEventListener('DOMContentLoaded', function() {
+            // தரவு சேமிப்பு இருப்பதை உறுதிப்படுத்தவும்
+            const data = loadData();
+            saveData(STORAGE_KEYS.FAMILY, data.family);
+            saveData(STORAGE_KEYS.BUSINESS, data.business);
+            saveData(STORAGE_KEYS.STOCK, data.stock);
+            
+            // டாஷ்போர்டை புதுப்பிக்கவும்
+            updateDashboard();
+            
+            // குடும்ப தரவை ஏற்றவும்
+            loadFamilyData();
+            
+            // வியாபார தரவை ஏற்றவும்
+            loadBusinessData();
+            
+            // பங்கு தரவை ஏற்றவும்
+            loadStockData();
+        });
+    </script>
+</body>
+</html>
